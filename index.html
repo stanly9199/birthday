@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生日祝賀程式</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+            position: relative;
+        }
+
+        .birthday-message {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 20px #ff6b6b, 0 0 40px #ff6b6b, 0 0 60px #ff6b6b;
+            margin-bottom: 2rem;
+            animation: glow 2s ease-in-out infinite alternate;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .birthday-message.show {
+            animation: appear 1s ease-out forwards, glow 2s ease-in-out infinite alternate 1s;
+        }
+
+        .date-info {
+            font-size: 1.5rem;
+            color: #ffd700;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px #ffd700;
+        }
+
+        .countdown {
+            font-size: 2rem;
+            color: #87ceeb;
+            text-shadow: 0 0 15px #87ceeb;
+        }
+
+        @keyframes appear {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px #ff6b6b, 0 0 40px #ff6b6b, 0 0 60px #ff6b6b;
+            }
+            to {
+                text-shadow: 0 0 30px #ff6b6b, 0 0 60px #ff6b6b, 0 0 90px #ff6b6b;
+            }
+        }
+
+        .firework {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .rocket {
+            position: absolute;
+            width: 3px;
+            height: 20px;
+            background: linear-gradient(to top, #ffd700, #ff6b6b);
+            border-radius: 50%;
+            animation: launch 1s ease-out forwards;
+        }
+
+        @keyframes launch {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-300px);
+                opacity: 0;
+            }
+        }
+
+        .explosion {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: explode 2s ease-out forwards;
+        }
+
+        .particle.large {
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .particle.medium {
+            width: 6px;
+            height: 6px;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .particle.small {
+            width: 4px;
+            height: 4px;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .particle.trail {
+            width: 2px;
+            height: 10px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        @keyframes explode {
+            0% {
+                opacity: 1;
+                transform: scale(0) rotate(0deg);
+                filter: brightness(2);
+            }
+            15% {
+                opacity: 1;
+                transform: scale(1.2) rotate(180deg);
+                filter: brightness(1.5);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) rotate(360deg);
+                filter: brightness(0.5);
+            }
+        }
+
+        .shockwave {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: shockwave 0.6s ease-out forwards;
+        }
+
+        @keyframes shockwave {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+                transform: translate(-150px, -150px);
+            }
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: sparkle 2s linear infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        .music-note {
+            position: absolute;
+            font-size: 2rem;
+            color: #ffd700;
+            animation: float 3s ease-in-out infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="date-info" id="dateInfo">今天是 <span id="currentDate"></span></div>
+        <div class="birthday-message" id="birthdayMessage">🎉 Happy Birthday! 🎂</div>
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <script>
+        let fireworkInterval;
+        let sparkleInterval;
+        
+        function updateDateTime() {
+            const now = new Date();
+            const currentDateStr = `${now.getMonth() + 1}/${now.getDate()}`;
+            document.getElementById('currentDate').textContent = currentDateStr;
+            
+            // 檢查是否為9/6
+            if (now.getMonth() === 8 && now.getDate() === 6) { // 月份從0開始，所以9月是8
+                showBirthdayMessage();
+                startFireworks();
+                startSparkles();
+                addFloatingNotes();
+            } else {
+                showCountdown();
+            }
+        }
+
+        function showBirthdayMessage() {
+            const message = document.getElementById('birthdayMessage');
+            const countdown = document.getElementById('countdown');
+            message.classList.add('show');
+            countdown.style.display = 'none';
+        }
+
+        function showCountdown() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            let targetDate = new Date(currentYear, 8, 6); // 9月6日
+            
+            // 如果今年的9/6已經過了，就計算到明年的9/6
+            if (now > targetDate) {
+                targetDate = new Date(currentYear + 1, 8, 6);
+            }
+            
+            const timeDiff = targetDate - now;
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            
+            document.getElementById('countdown').innerHTML = 
+                `距離生日還有：<br>${days} 天 ${hours} 小時 ${minutes} 分 ${seconds} 秒`;
+        }
+
+        function createFirework(x, y) {
+            // 先創建火箭升空效果
+            const rocket = document.createElement('div');
+            rocket.className = 'rocket';
+            rocket.style.left = x + 'px';
+            rocket.style.top = window.innerHeight + 'px';
+            document.body.appendChild(rocket);
+            
+            // 1秒後火箭到達位置，開始爆炸
+            setTimeout(() => {
+                document.body.removeChild(rocket);
+                createExplosion(x, y - 300);
+            }, 1000);
+        }
+
+        function createExplosion(x, y) {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#fd79a8', '#fdcb6e', '#6c5ce7'];
+            
+            // 創建衝擊波效果
+            const shockwave = document.createElement('div');
+            shockwave.className = 'shockwave';
+            shockwave.style.left = x + 'px';
+            shockwave.style.top = y + 'px';
+            document.body.appendChild(shockwave);
+            
+            setTimeout(() => {
+                if (shockwave.parentNode) {
+                    document.body.removeChild(shockwave);
+                }
+            }, 600);
+            
+            // 創建主要爆炸效果
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = x + 'px';
+            explosion.style.top = y + 'px';
+            
+            // 創建多層粒子效果
+            const particleCount = 60;
+            const mainColor = colors[Math.floor(Math.random() * colors.length)];
+            const secondColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                const particleTypes = ['large', 'medium', 'small', 'trail'];
+                const particleType = particleTypes[Math.floor(Math.random() * particleTypes.length)];
+                
+                particle.className = `particle ${particleType}`;
+                
+                // 使用主色調和次色調
+                const useMainColor = Math.random() > 0.3;
+                particle.style.background = useMainColor ? mainColor : secondColor;
+                particle.style.color = useMainColor ? mainColor : secondColor;
+                
+                const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+                const velocity = 80 + Math.random() * 120;
+                const x_vel = Math.cos(angle) * velocity;
+                const y_vel = Math.sin(angle) * velocity;
+                
+                // 添加重力效果
+                particle.style.transform = `translate(${x_vel}px, ${y_vel}px)`;
+                particle.style.animationDelay = Math.random() * 0.1 + 's';
+                
+                explosion.appendChild(particle);
+            }
+            
+            // 添加內部閃光效果
+            for (let i = 0; i < 20; i++) {
+                const flash = document.createElement('div');
+                flash.className = 'particle small';
+                flash.style.background = '#ffffff';
+                flash.style.color = '#ffffff';
+                flash.style.boxShadow = '0 0 20px #ffffff';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 30 + Math.random() * 60;
+                const x_vel = Math.cos(angle) * velocity;
+                const y_vel = Math.sin(angle) * velocity;
+                
+                flash.style.transform = `translate(${x_vel}px, ${y_vel}px)`;
+                flash.style.animationDuration = '1s';
+                
+                explosion.appendChild(flash);
+            }
+            
+            document.body.appendChild(explosion);
+            
+            // 添加爆炸音效模擬（視覺效果）
+            setTimeout(() => {
+                createSecondaryExplosion(x, y, mainColor);
+            }, 300);
+            
+            setTimeout(() => {
+                if (explosion.parentNode) {
+                    document.body.removeChild(explosion);
+                }
+            }, 2000);
+        }
+
+        function createSecondaryExplosion(x, y, color) {
+            const secondaryExplosion = document.createElement('div');
+            secondaryExplosion.className = 'explosion';
+            secondaryExplosion.style.left = x + 'px';
+            secondaryExplosion.style.top = y + 'px';
+            
+            // 創建較小的二次爆炸
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle medium';
+                particle.style.background = color;
+                particle.style.color = color;
+                particle.style.opacity = '0.7';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 40 + Math.random() * 80;
+                const x_vel = Math.cos(angle) * velocity;
+                const y_vel = Math.sin(angle) * velocity;
+                
+                particle.style.transform = `translate(${x_vel}px, ${y_vel}px)`;
+                particle.style.animationDuration = '1.5s';
+                
+                secondaryExplosion.appendChild(particle);
+            }
+            
+            document.body.appendChild(secondaryExplosion);
+            
+            setTimeout(() => {
+                if (secondaryExplosion.parentNode) {
+                    document.body.removeChild(secondaryExplosion);
+                }
+            }, 1500);
+        }
+
+        function startFireworks() {
+            fireworkInterval = setInterval(() => {
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * (window.innerHeight * 0.6) + 100; // 限制爆炸高度
+                createFirework(x, y);
+            }, 1500);
+            
+            // 添加隨機的大型煙火
+            setInterval(() => {
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * (window.innerHeight * 0.4) + 50;
+                setTimeout(() => createExplosion(x, y), Math.random() * 2000);
+            }, 3000);
+        }
+
+        function createSparkle() {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = Math.random() * window.innerWidth + 'px';
+            sparkle.style.top = Math.random() * window.innerHeight + 'px';
+            sparkle.style.animationDelay = Math.random() * 2 + 's';
+            
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => {
+                if (sparkle.parentNode) {
+                    document.body.removeChild(sparkle);
+                }
+            }, 2000);
+        }
+
+        function startSparkles() {
+            sparkleInterval = setInterval(createSparkle, 200);
+        }
+
+        function addFloatingNotes() {
+            const notes = ['♪', '♫', '♬', '♩', '♭', '♮', '♯'];
+            
+            setInterval(() => {
+                const note = document.createElement('div');
+                note.className = 'music-note';
+                note.textContent = notes[Math.floor(Math.random() * notes.length)];
+                note.style.left = Math.random() * window.innerWidth + 'px';
+                note.style.top = Math.random() * window.innerHeight + 'px';
+                note.style.animationDelay = Math.random() * 3 + 's';
+                
+                document.body.appendChild(note);
+                
+                setTimeout(() => {
+                    if (note.parentNode) {
+                        document.body.removeChild(note);
+                    }
+                }, 3000);
+            }, 1000);
+        }
+
+        // 手動觸發生日效果的功能（用於測試）
+        function triggerBirthdayEffect() {
+            showBirthdayMessage();
+            startFireworks();
+            startSparkles();
+            addFloatingNotes();
+        }
+
+        // 點擊螢幕觸發升空煙火效果
+        document.body.addEventListener('click', function(e) {
+            createFirework(e.clientX, e.clientY);
+        });
+        
+        // 雙擊觸發直接爆炸效果
+        document.body.addEventListener('dblclick', function(e) {
+            createExplosion(e.clientX, e.clientY);
+        });
+
+        // 初始化
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        // 為了演示效果，可以取消註解下面這行來立即觸發生日效果
+         //triggerBirthdayEffect();
+    </script>
+</body>
+</html>
